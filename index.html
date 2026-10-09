@@ -835,6 +835,24 @@ body.noms .case .sym{display:none}
     filtrer();
   });
 
+  /* ---------- changement d'image ----------
+     Changer de case ne doit pas laisser le portrait précédent à l'écran le
+     temps que le suivant arrive : on masque l'image tant qu'elle n'est pas
+     chargée, et on la révèle à l'arrivée. Quand elle est déjà en mémoire,
+     « complete » est vrai immédiatement et rien ne clignote. On masque par
+     « visibility » plutôt que par « hidden », pour que le cadre garde sa
+     taille et que la fiche ne sursaute pas. */
+  function montrerImage(img, src, alt){
+    img.onload = img.onerror = null;
+    img.alt = alt || "";
+    if (img.getAttribute("src") === src){ img.style.visibility = ""; return; }
+    img.removeAttribute("src");
+    img.style.visibility = "hidden";
+    img.onload = img.onerror = function(){ img.style.visibility = ""; };
+    img.src = src;
+    if (img.complete) img.style.visibility = "";
+  }
+
   /* ---------- fiche ---------- */
   var voile = null, audio = null, zCourant = null, dernierFocus = null;
 
@@ -964,12 +982,13 @@ body.noms .case .sym{display:none}
     var loupe = voile.querySelector("#f-loupe");
     var creuxFiche = voile.querySelector("#f-creux");
     if (c.grande) {
-      img.src = c.grande;
-      img.alt = "Portrait de " + c.scientifique + ", dessiné par " + c.eleve;
+      montrerImage(img, c.grande,
+        "Portrait de " + c.scientifique + ", dessiné par " + c.eleve);
       loupe.hidden = false; creuxFiche.hidden = true;
     } else {
-      img.removeAttribute("src"); loupe.hidden = true;
-      creuxFiche.hidden = false;
+      img.onload = img.onerror = null;
+      img.removeAttribute("src"); img.style.visibility = "";
+      loupe.hidden = true; creuxFiche.hidden = false;
     }
     // Sans illustration, on nomme quand même l'élève : la case lui est
     // attribuée, et son nom n'a pas à disparaître parce que le dessin tarde.
@@ -1071,8 +1090,8 @@ body.noms .case .sym{display:none}
     if (!zoom) construireZoom();
     focusZoom = document.activeElement;
     var img = zoom.querySelector("#zoom-img");
-    img.src = c.grande;
-    img.alt = "Portrait de " + c.scientifique + ", dessiné par " + c.eleve;
+    montrerImage(img, c.grande,
+      "Portrait de " + c.scientifique + ", dessiné par " + c.eleve);
     zoom.querySelector("#zoom-legende").textContent =
       c.scientifique + (c.eleve ? " — illustration : " + c.eleve : "");
     zoom.hidden = false;
